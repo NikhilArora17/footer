@@ -3,137 +3,181 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Liquid Glass (Apple-style)</title>
+<title>Soft Smoke Footer — Transparent</title>
 <style>
   :root{
-    --bg-a: #0f1218;
-    --bg-b: #0b0d12;
-    --acc-1: #454E59;
-    --acc-2: #b1b5c0;
-    --acc-3: #000000;
-    --glass-radius: 24px;
-    --glass-tint: rgba(255,255,255,.06);
-    --glass-border: rgba(255,255,255,.22);
-    --glass-blur: 28px;
-    --glass-sat: 150%;
-    --inner-glow-alpha: .55;
-    --shadow: 0 20px 60px rgba(0,0,0,.55);
+    /* ---- QUICK TWEAKS ---- */
+    --height: 420px;   /* iframe/canvas height */
+    --speed: 0.15;    /* upward drift speed (0.02–0.09) */
+    --swirl: 0.15;     /* internal motion (0.04–0.20) */
+    --detail: 1.5;     /* smoke detail scale (1.2–2.4; lower = broader) */
+    --soft: 2.3;       /* how gently it dies as it rises (1.6–3.0) */
+    --alpha: 0.58;     /* overall opacity */
+
+    /* Color mood (warm). For charcoal, use greys (examples below). */
+    --colorA: #B1B5C0; /* light through smoke */
+    --colorB: #B1B5C0; /* base */
+    /*
+    Charcoal:
+    --colorA:#1f232a; --colorB:#0f1318;
+    Cool:
+    --colorA:#5fd3ff; --colorB:#0c1620;
+    */
   }
-
-  *{ box-sizing: border-box; }
-  html,body{ height:100%; }
-  body{
-    margin:0; color:#fff;
-    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter,
-          system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    background:
-      radial-gradient(1200px 800px at 10% 15%, #161b25 0%, transparent 60%),
-      radial-gradient(1000px 900px at 85% 80%, #0e1420 0%, transparent 55%),
-      linear-gradient(180deg, var(--bg-a), var(--bg-b));
-    position:relative;
-  }
-
-  body::after{
-    content:""; position:fixed; inset:-2px; pointer-events:none; z-index:0;
-    background:
-      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.035) 99%, transparent),
-      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,.025) 99%, transparent),
-      radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,.03) 99%, transparent);
-    mix-blend-mode: screen; opacity:.35;
-  }
-
-  .bg-orbs{ position:fixed; inset:0; z-index:0; filter: blur(40px) saturate(120%); opacity:.55; }
-  .bg-orbs span{ position:absolute; width:42vmax; height:42vmax; border-radius:50%; }
-  .bg-orbs .o1{ left:-10vmax; top:-8vmax; background: radial-gradient(closest-side, #b1b5c0, transparent); }
-  .bg-orbs .o2{ right:-16vmax; bottom:-12vmax; background: radial-gradient(closest-side, #000000, transparent); }
-
-  .wrap{ position:relative; z-index:1; display:grid; place-items:start center; padding:0; }
-
-  .glass{
-    position:relative; isolation:isolate; overflow:hidden;
-    width:1340px;
-    height:380px;
-    max-width:100%;
-    margin-top:0;
-    border-radius: var(--glass-radius);
-    background:
-      linear-gradient( to bottom right, rgba(255,255,255,.14), rgba(255,255,255,.04) ),
-      var(--glass-tint);
-    border: 1px solid var(--glass-border);
-    border-top-color: rgba(255,255,255,.30);
-    border-right-color: rgba(255,255,255,.28);
-    box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,.04) inset;
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-            backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  }
-  .glass::after{
-    content:""; position:absolute; inset:0; pointer-events:none;
-    box-shadow: 0 1px 0 rgba(255,255,255, var(--inner-glow-alpha)) inset,
-                0 -1px 0 rgba(0,0,0,.25) inset;
-    border-radius: inherit;
-    mix-blend-mode: screen;
-  }
-
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
-    .glass{ background: rgba(255,255,255,.08); }
-  }
-
-  .liquid{ position:absolute; inset:-18% -12%; z-index:0; filter: url(#gooey);
-           opacity:.85; }
-
-  .blob{ position:absolute; border-radius:50%; mix-blend-mode: screen; }
-  .blob::before{ content:""; position:absolute; inset:0; border-radius:inherit;
-    background:
-      radial-gradient(35% 35% at 32% 30%, rgba(255,255,255,.55), rgba(255,255,255,.08) 60%, transparent 72%),
-      radial-gradient(closest-side, var(--tint, var(--acc-1)) 35%, transparent 70%);
-  }
-
-  /* Bigger blob sizes */
-  .b1{ --tint: color-mix(in srgb, var(--acc-1) 40%, transparent); width:50vmin; height:50vmin; left:4%; top:6%; animation: b1 6s ease-in-out infinite; }
-  .b2{ --tint: color-mix(in srgb, var(--acc-2) 40%, transparent); width:56vmin; height:56vmin; right:2%; top:-6%; animation: b2 6s ease-in-out infinite; }
-  .b3{ --tint: color-mix(in srgb, var(--acc-3) 40%, transparent); width:44vmin; height:44vmin; left:18%; bottom:-8%; animation: b3 6s ease-in-out infinite; }
-  .b4{ --tint: color-mix(in srgb, var(--acc-1) 40%, transparent); width:36vmin; height:36vmin; right:12%; bottom:4%; animation: b4 6s ease-in-out infinite; }
-  .b5{ --tint: color-mix(in srgb, var(--acc-2) 40%, transparent); width:32vmin; height:32vmin; left:50%; top:40%; animation: b5 6s ease-in-out infinite; }
-
-  @keyframes b1{ 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(14%,10%) scale(1.08)} 100%{transform:translate(0,0) scale(1)} }
-  @keyframes b2{ 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-10%,14%) scale(1.05)} 100%{transform:translate(0,0) scale(1)} }
-  @keyframes b3{ 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(10%,-12%) scale(1.06)} 100%{transform:translate(0,0) scale(1)} }
-  @keyframes b4{ 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-12%,-8%) scale(1.07)} 100%{transform:translate(0,0) scale(1)} }
-  @keyframes b5{ 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(6%,-10%) scale(1.09)} 100%{transform:translate(0,0) scale(1)} }
-
-  .sheen{ position:absolute; inset:-40% -20%; z-index:0; pointer-events:none;
-          background: conic-gradient(from 130deg at 30% 30%, rgba(255,255,255,.18) 0 15%, transparent 20% 42%, rgba(255,255,255,.10) 48% 58%, transparent 65% 82%, rgba(255,255,255,.14) 88% 100%);
-          filter: blur(44px); animation: sweep 14s linear infinite; opacity:.6; }
-  @keyframes sweep{ to{ transform: rotate(360deg); } }
-
-  @media (max-width:600px){ .glass{ padding:28px 24px 32px; } }
+  html,body{margin:0;height:100%;background:transparent;}
+  #fx{display:block;width:100%;height:var(--height);pointer-events:none;}
 </style>
 </head>
 <body>
-  <div class="bg-orbs" aria-hidden="true">
-    <span class="o1"></span>
-    <span class="o2"></span>
-  </div>
+<canvas id="fx"></canvas>
 
-  <main class="wrap">
-    <section class="glass" role="region" aria-label="Liquid glass demo">
-      <div class="liquid" aria-hidden="true">
-        <div class="blob b1"></div>
-        <div class="blob b2"></div>
-        <div class="blob b3"></div>
-        <div class="blob b4"></div>
-        <div class="blob b5"></div>
-      </div>
-      <div class="sheen" aria-hidden="true"></div>
-    </section>
-  </main>
+<script>
+/* ---------- WebGL smoke (no libs) ---------- */
+const c = document.getElementById('fx');
+const gl = c.getContext('webgl', { alpha:true, antialias:true, premultipliedAlpha:true });
+if(!gl){ document.body.style.background='transparent'; throw new Error('WebGL not available'); }
 
-  <svg width="0" height="0" aria-hidden="true" focusable="false">
-    <filter id="gooey">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
-      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -10" result="goo"/>
-      <feComposite in="goo" in2="SourceGraphic" operator="atop"/>
-    </filter>
-  </svg>
+const DPR = Math.min(devicePixelRatio||1,2);
+const VSH = `
+attribute vec2 p; varying vec2 uv;
+void main(){ uv = p*0.5+0.5; gl_Position=vec4(p,0.,1.); }
+`;
+const FSH = `
+precision highp float; varying vec2 uv;
+uniform vec2 uRes; uniform float uT, uSpeed, uSwirl, uDetail, uSoft, uAlpha;
+uniform vec3 uA, uB;
+
+/* 3D simplex noise + fbm */
+vec3 mod289(vec3 x){return x - floor(x*(1./289.))*289.;}
+vec4 mod289(vec4 x){return x - floor(x*(1./289.))*289.;}
+vec4 permute(vec4 x){return mod289(((x*34.)+1.)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314*r;}
+float snoise(vec3 v){
+  const vec2 C=vec2(1./6.,1./3.); const vec4 D=vec4(0.,.5,1.,2.);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz), l=1.-g;
+  vec3 i1=min(g.xyz,l.zxy), i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx, x2=x0-i2+2.*C.xxx, x3=x0-1.+3.*C.xxx;
+  i=mod289(i);
+  vec4 p=permute(permute(permute(i.z+vec4(0.,i1.z,i2.z,1.))+i.y+vec4(0.,i1.y,i2.y,1.))+i.x+vec4(0.,i1.x,i2.x,1.));
+  float n_=0.142857142857; vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z), y_=floor(j-7.*x_);
+  vec4 x=x_*ns.x+ns.yyyy, y=y_*ns.x+ns.yyyy, h=1.-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy), b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.+1., s1=floor(b1)*2.+1., sh=-step(h,vec4(0.));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy, a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x), p1=vec3(a0.zw,h.y), p2=vec3(a1.xy,h.z), p3=vec3(a1.zw,h.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
+  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);
+  m*=m;
+  return 42.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+float fbm(vec3 p){
+  float f=0., a=.5;
+  for(int i=0;i<5;i++){ f+=a*snoise(p); p=p*2.02+vec3(.3,.6,.2); a*=.5; }
+  return f*0.5+0.5;
+}
+
+void main(){
+  float aspect=uRes.x/uRes.y;
+  vec2 suv=vec2(uv.x*aspect, uv.y);
+
+  // Upward drift + gentle evolution
+  vec3 base = vec3(suv.x*uDetail, (suv.y - uT*uSpeed)*uDetail, uT*uSwirl); // move up
+
+  // Domain-warped fbm for silky smoke
+  float w1 = fbm(base);
+  float w2 = fbm(base + vec3(0.7,0.5,0.3));
+  float n  = fbm(base + vec3(w1-0.5, w2-0.5, 0.0)*0.8);
+
+  // Soft density mapping (no bandy edges)
+  float density = smoothstep(0.35, 0.90, n);
+
+  // Heavier at bottom, dies upward
+  float envelope = pow(1.0 - uv.y, uSoft); // denser at bottom, dies upward
+  float a = clamp(density * envelope * uAlpha, 0.0, 1.0);
+
+  // Light-through-smoke color blend + tiny dither
+  vec3 col = mix(uB, uA, density*0.95);
+  float d = fract(sin(dot(uv*uRes, vec2(12.9898,78.233))) * 43758.5453);
+  col += (d-0.5)*0.004;
+
+  gl_FragColor = vec4(col, a);
+}
+`;
+
+function shader(type, src){
+  const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog=gl.createProgram();
+gl.attachShader(prog, shader(gl.VERTEX_SHADER, VSH));
+gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FSH));
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+const buf=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const loc=gl.getAttribLocation(prog,'p');
+gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+
+const Ures=gl.getUniformLocation(prog,'uRes');
+const Ut = gl.getUniformLocation(prog,'uT');
+const Uspeed = gl.getUniformLocation(prog,'uSpeed');
+const Uswirl = gl.getUniformLocation(prog,'uSwirl');
+const Udet = gl.getUniformLocation(prog,'uDetail');
+const Usoft= gl.getUniformLocation(prog,'uSoft');
+const Ualpha=gl.getUniformLocation(prog,'uAlpha');
+const UA = gl.getUniformLocation(prog,'uA');
+const UB = gl.getUniformLocation(prog,'uB');
+
+const css=getComputedStyle(document.documentElement);
+const num = (n, d)=>{ const v=parseFloat(css.getPropertyValue(n)); return Number.isFinite(v)?v:d; };
+const parseColor = n => {
+  let c = css.getPropertyValue(n).trim();
+  const ctx=document.createElement('canvas').getContext('2d');
+  ctx.fillStyle = c||'#ffffff';
+  const m = ctx.fillStyle.match(/\d+(\.\d+)?/g).map(Number);
+  return new Float32Array([m[0]/255,m[1]/255,m[2]/255]);
+};
+
+gl.uniform1f(Uspeed, num('--speed',0.045));
+gl.uniform1f(Uswirl, num('--swirl',0.10));
+gl.uniform1f(Udet,   num('--detail',1.7));
+gl.uniform1f(Usoft,  num('--soft',2.3));
+gl.uniform1f(Ualpha, num('--alpha',0.98));
+gl.uniform3fv(UA, parseColor('--colorA'));
+gl.uniform3fv(UB, parseColor('--colorB'));
+
+function resize(){
+  const w=c.clientWidth, h=c.clientHeight;
+  c.width=Math.max(2,Math.floor(w*DPR));
+  c.height=Math.max(2,Math.floor(h*DPR));
+  gl.viewport(0,0,c.width,c.height);
+  gl.uniform2f(Ures, c.width, c.height);
+}
+new ResizeObserver(resize).observe(c);
+
+let t0=performance.now();
+function draw(t){
+  gl.uniform1f(Ut, (t-t0)/1000);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  requestAnimationFrame(draw);
+}
+resize(); requestAnimationFrame(draw);
+
+/* Reduced motion */
+const mq = matchMedia('(prefers-reduced-motion: reduce)');
+mq.addEventListener?.('change', ()=> {
+  gl.uniform1f(Uspeed, mq.matches?0.0:num('--speed',0.045));
+  gl.uniform1f(Uswirl, mq.matches?0.0:num('--swirl',0.10));
+});
+</script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>B1B5C0 Smoke Footer — Auto Height</title>
+<title>B1B5C0 Smoke Footer — Auto Height (All Screens)</title>
 <style>
   :root{
     /* MOTION */
@@ -20,15 +20,25 @@
     --colorB: #B1B5C0;
   }
 
-  html,body{ margin:0; height:100%; background:transparent; }
-
-  /* Wrapper fills screen size */
-  #wrap{
-    width: 100vw;
-    height: 100vh;   /* 👈 auto-adjusts with viewport height */
+  /* Keep page clean in an iframe */
+  html,body{
+    margin:0;
+    height:100%;
+    background:transparent;
+    overflow:hidden; /* avoid accidental scroll on tiny overflows */
   }
 
-  /* Canvas fills wrapper */
+  /* Wrapper: fills parent width, height = safe viewport height
+     Order: older browsers -> new units -> JS var fallback */
+  #wrap{
+    width: 100%;                /* <-- safer than 100vw inside Wix iframes */
+    height: 100vh;              /* legacy fallback */
+    height: 100dvh;             /* modern exact viewport height */
+    height: 100svh;             /* iOS/Android toolbar-aware */
+    height: calc(var(--vh, 1vh) * 100); /* JS fallback for mobile 100vh bug */
+  }
+
+  /* Canvas fills wrapper exactly */
   #fx{
     display:block;
     width:100%;
@@ -44,12 +54,22 @@
 </div>
 
 <script>
+/* ----- Viewport height fix for iOS/Android toolbars ----- */
+function setVH(){
+  // 1vh = 1% of the *visible* viewport height
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+setVH();
+addEventListener('resize', setVH);
+addEventListener('orientationchange', setVH);
+
 const canvas = document.getElementById('fx');
 const host   = document.getElementById('wrap');
 const gl = canvas.getContext('webgl', { alpha:true, antialias:true, premultipliedAlpha:true });
 if(!gl){ throw new Error('WebGL not supported'); }
-let DPR = Math.min(devicePixelRatio||1,2);
 
+/* ----- Shader (unchanged) ----- */
 const VSH = `
 attribute vec2 p; varying vec2 uv;
 void main(){ uv = p*0.5+0.5; gl_Position = vec4(p,0.,1.); }
@@ -58,7 +78,6 @@ const FSH = `
 precision highp float; varying vec2 uv;
 uniform vec2 uRes; uniform float uT, uSpeed, uSwirl, uDetail, uSoft, uAlpha;
 uniform vec3 uA, uB;
-/* ... shader code unchanged ... */
 vec3 mod289(vec3 x){return x-floor(x*(1./289.))*289.;}
 vec4 mod289(vec4 x){return x-floor(x*(1./289.))*289.;}
 vec4 permute(vec4 x){return mod289(((x*34.)+1.)*x);}
@@ -152,11 +171,11 @@ gl.uniform1f(Ualpha, num('--alpha',0.92));
 gl.uniform3fv(UA, parseColor('--colorA'));
 gl.uniform3fv(UB, parseColor('--colorB'));
 
-/* Resize to wrapper */
+/* ----- DPR-aware resize to wrapper ----- */
 function resize(){
   const w = host.clientWidth;
   const h = host.clientHeight;
-  const DPR = Math.min(devicePixelRatio||1, 2);
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width  = Math.max(2, Math.floor(w * DPR));
   canvas.height = Math.max(2, Math.floor(h * DPR));
   gl.viewport(0,0,canvas.width,canvas.height);
@@ -164,10 +183,18 @@ function resize(){
 }
 new ResizeObserver(resize).observe(host);
 addEventListener('resize', resize);
+addEventListener('orientationchange', resize);
 
 let t0=performance.now();
 function draw(t){ gl.uniform1f(Ut,(t-t0)/1000); gl.drawArrays(gl.TRIANGLE_STRIP,0,4); requestAnimationFrame(draw); }
 resize(); requestAnimationFrame(draw);
+
+/* Reduced motion support (unchanged) */
+const mq=matchMedia('(prefers-reduced-motion: reduce)');
+mq.addEventListener?.('change',()=>{
+  gl.uniform1f(Uspeed, mq.matches?0.0:num('--speed',0.045));
+  gl.uniform1f(Uswirl, mq.matches?0.0:num('--swirl',0.10));
+});
 </script>
 </body>
 </html>
